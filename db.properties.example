@@ -1,0 +1,8 @@
+### Copy this file to db.properties and update the values to match your local MySQL setup
+# Example values
+db.url=jdbc:mysql://localhost:3306/exam_system
+db.user=root
+db.password=
+
+# If you're using a non-standard MySQL port, include it in the URL, e.g.
+# db.url=jdbc:mysql://localhost:3307/exam_system
