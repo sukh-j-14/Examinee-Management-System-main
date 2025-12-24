@@ -44,6 +44,107 @@ This is a simple Java Swing application that uses MySQL as its backend database.
    java -cp "bin:lib/*" Main
    ```
 
+## Detailed setup and run guide
+
+This section collects exact commands and troubleshooting tips so you can get the project running from a fresh machine.
+
+Prerequisites
+- Java JDK 8 or later (the project compiles with Java 8 compatibility flags)
+- MySQL or MariaDB server
+- JDBC driver (MySQL Connector/J or MariaDB client) placed in the `lib/` directory
+
+One-time database setup (run once per machine)
+
+```bash
+# start MySQL (Ubuntu/Debian)
+sudo systemctl start mysql
+
+# from project root (run once)
+cd /home/sukh/Desktop/Examinee-Management-System-main
+
+# create the database, tables and default admin user
+sudo mysql < create_database.sql
+```
+
+Note: If your `mysql` CLI requires a password, use `mysql -u <user> -p < create_database.sql` instead and provide the password when prompted.
+
+Quick run (compile + run)
+
+```bash
+cd /home/sukh/Desktop/Examinee-Management-System-main
+mkdir -p bin
+# Compile (only needed when you change Java sources)
+javac -source 1.8 -target 1.8 -d bin -cp "lib/*" src/*.java
+
+# Test DB connection (recommended)
+java -cp "bin:lib/*" TestDBConnection
+
+# Run the GUI
+java -cp "bin:lib/*" Main
+```
+
+Using the helper script (optional)
+
+If you prefer to use a specific Java installation (for example JDK8), set `JAVA_HOME` and use the included helper:
+
+```bash
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64   # adjust path to your JDK
+chmod +x run-java8.sh
+./run-java8.sh TestDBConnection   # test DB
+./run-java8.sh Main               # run GUI
+```
+
+Docker-based database (isolated, recommended for testing)
+
+```bash
+# Start a MySQL container mapped to host port 3307
+docker run --name exam-mysql -e MYSQL_ROOT_PASSWORD=MyRootPass -e MYSQL_DATABASE=exam_system -p 3307:3306 -d mysql:8.0
+
+# Apply schema into the container
+docker exec -i exam-mysql mysql -u root -pMyRootPass < create_database.sql
+
+# Update db.properties to use port 3307:
+# db.url=jdbc:mysql://127.0.0.1:3307/exam_system?allowPublicKeyRetrieval=true&useSSL=false
+```
+
+Configuration: `db.properties`
+
+- Copy the example and edit values for your environment:
+
+```bash
+cp db.properties.example db.properties
+# edit db.properties and set db.url, db.user, db.password
+```
+
+Default login
+- Username: `admin`
+- Password: `admin`
+
+Troubleshooting
+- "Access denied for user": check `db.properties` credentials, create a dedicated DB user and grant privileges:
+
+```sql
+CREATE USER 'exam_user'@'localhost' IDENTIFIED BY 'exam_password';
+GRANT ALL PRIVILEGES ON exam_system.* TO 'exam_user'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+- "Could not connect / address not found": ensure MySQL is listening on the host/port in `db.url` and use `ss -tlnp | grep 3306` or `ss -tlnp | grep 3307` to check listeners.
+- JDBC driver errors (No suitable driver): ensure a JDBC jar (e.g., `mysql-connector-java-*.jar` or `mariadb-java-client.jar`) exists inside `lib/`.
+- GUI not visible on headless servers: the Swing UI requires a display. Use local desktop, or X11 forwarding / VNC.
+
+Security notes
+- Do not store production credentials in `db.properties` in source control.
+- Use a dedicated DB user with limited privileges rather than `root`.
+- Hash user passwords in `users` table for production use (the current default uses plaintext for convenience only).
+
+Recommended improvements
+- Add a build tool (Maven/Gradle) to manage dependencies and produce an executable JAR.
+- Move SQL and JDBC code into a DAO layer and add password hashing for users.
+- Add logging (SLF4J) and better error handling in UI.
+
+If you want, I can add a small `run-all.sh` script that optionally starts a Docker MySQL instance, applies the schema, compiles and runs the app.
+
 ### Running with JDK 8 (recommended if you have JDK 8 installed)
 
 If you have JDK 8 installed and want to compile/run using it, set JAVA_HOME and run the helper script:
